@@ -108,12 +108,21 @@ def draw_obj_model(model_data, position=(0, 0, 0), scale=1.0, color=(0.7, 0.7, 0
 # CONFIGURACIÓN DE OBJETOS EN LA ESCENA
 # ==========================================
 
+# Y Offsets por tipo de objeto (evita que queden enterrados)
+Y_OFFSETS = {
+    "tree": 1.5,      # Árboles necesitan offset alto (origen en centro)
+    "house": 2.5,     # Casas con origen bajo
+    "car": 0.8,       # Coches justo sobre el asfalto
+    "snowman": 2.0,   # Muñecos de nieve (se suma a altura de montaña)
+    "monkey": 1.5,    # Monos decorativos
+}
+
 # Lista de objetos a renderizar: (modelo, posición, escala, color)
 scene_objects = []
 
 def setup_scene_objects():
     """
-    Configura 35+ objetos distribuidos en la escena.
+    Configura 48 objetos distribuidos en la escena.
     Los modelos se reutilizan (instancias) en diferentes posiciones.
     """
     global scene_objects
@@ -137,42 +146,37 @@ def setup_scene_objects():
     monkey_model = load_obj(monkey_path)
 
     # =============================================
-    # ÁRBOLES - 16 instancias en clusters
-    # Tree: ~1.7 unidades, escala 3.0 = ~5 unidades
-    # Y offset: 1.0 para que no estén hundidos
+    # ÁRBOLES - 20 instancias en clusters
     # =============================================
-    tree_positions = [
-        # Cluster izquierdo
-        (-20, 1.0, -15), (-22, 1.0, -12), (-18, 1.0, -18), (-24, 1.0, -10),
-        # Cluster derecho (alejado de montaña)
-        (15, 1.0, 20), (18, 1.0, 22), (12, 1.0, 18), (20, 1.0, 25),
+    tree_positions_xz = [
+        # Cluster izquierdo (bosque)
+        (-20, -15), (-22, -12), (-18, -18), (-24, -10), (-19, -8),
+        # Cluster derecho
+        (15, 20), (18, 22), (12, 18), (20, 25), (17, 28),
         # Dispersos por el terreno
-        (-30, 1.0, 10), (-28, 1.0, -5), (8, 1.0, -25), (-15, 1.0, 30),
+        (-30, 10), (-28, -5), (8, -25), (-15, 30), (-35, 15),
         # Cerca de casas
-        (-32, 1.0, -22), (-25, 1.0, 28), (8, 1.0, -28), (15, 1.0, 30)
+        (-32, -22), (-25, 28), (8, -28), (15, 30), (-10, -30)
     ]
-    for pos in tree_positions:
+    for x, z in tree_positions_xz:
+        pos = (x, Y_OFFSETS["tree"], z)
         scene_objects.append((tree_model, pos, 3.0, (0.15, 0.45, 0.15)))
 
     # =============================================
-    # CASAS - 6 instancias en las orillas
-    # House: ~1.2 unidades, escala 4.0 = ~5 unidades
-    # Y offset: 2.5 para compensar origen del modelo
+    # CASAS - 8 instancias en las orillas
     # =============================================
-    house_positions = [
-        (-30, 2.5, -25), (-32, 2.5, 20), (-28, 2.5, 0),
-        (8, 2.5, -32), (10, 2.5, 32), (12, 2.5, -15)
+    house_positions_xz = [
+        (-30, -25), (-32, 20), (-28, 0), (-35, -10),
+        (8, -32), (10, 32), (12, -15), (6, 25)
     ]
-    for pos in house_positions:
+    for x, z in house_positions_xz:
+        pos = (x, Y_OFFSETS["house"], z)
         scene_objects.append((house_model, pos, 4.0, (0.75, 0.55, 0.35)))
 
     # =============================================
-    # COCHES - 6 instancias SOBRE la carretera
-    # Car: ~89 unidades, escala 0.05 = ~4.5 unidades
-    # Usa get_road_center(x) para posicionar en Z
-    # Y offset: 0.1 justo sobre el asfalto
+    # COCHES - 8 instancias SOBRE la carretera
     # =============================================
-    car_x_positions = [-20, -10, -2, 5, 12, 22]
+    car_x_positions = [-25, -18, -10, -3, 4, 10, 18, 25]
     car_colors = [
         (0.8, 0.2, 0.2),  # Rojo
         (0.2, 0.4, 0.8),  # Azul
@@ -180,35 +184,34 @@ def setup_scene_objects():
         (0.3, 0.7, 0.3),  # Verde
         (0.6, 0.3, 0.6),  # Morado
         (0.9, 0.5, 0.2),  # Naranja
+        (0.2, 0.2, 0.2),  # Negro
+        (0.9, 0.9, 0.9),  # Blanco
     ]
     for i, car_x in enumerate(car_x_positions):
         road_z = get_road_center(car_x)
-        # Offset lateral para que no estén en el centro exacto
         z_offset = 1.5 if i % 2 == 0 else -1.5
-        pos = (car_x, 0.1, road_z + z_offset)
+        pos = (car_x, Y_OFFSETS["car"], road_z + z_offset)
         scene_objects.append((car_model, pos, 0.05, car_colors[i]))
 
     # =============================================
-    # MUÑECOS DE NIEVE - 5 instancias en la montaña
-    # Snowman: ~0.6 unidades, escala 8.0 = ~5 unidades
-    # Posiciones elevadas en la zona de montaña (esquina 32, -32)
+    # MUÑECOS DE NIEVE - 6 instancias en la montaña
     # =============================================
-    snowman_positions = [
+    snowman_base_positions = [
         (28, 8.0, -28), (32, 10.0, -32), (25, 6.0, -25),
-        (30, 12.0, -35), (35, 9.0, -30)
+        (30, 12.0, -35), (35, 9.0, -30), (27, 7.0, -33)
     ]
-    for pos in snowman_positions:
+    for x, mountain_y, z in snowman_base_positions:
+        pos = (x, mountain_y + Y_OFFSETS["snowman"], z)
         scene_objects.append((snowman_model, pos, 8.0, (0.95, 0.95, 1.0)))
 
     # =============================================
-    # MONOS - 4 instancias decorativas
-    # Monkey: ~2 unidades, escala 1.5 = ~3 unidades
-    # Y offset: 1.0
+    # MONOS - 6 instancias decorativas
     # =============================================
-    monkey_positions = [
-        (-35, 1.0, 5), (35, 1.0, -5), (-8, 1.0, 35), (5, 1.0, -35)
+    monkey_positions_xz = [
+        (-35, 5), (35, -5), (-8, 35), (5, -35), (-38, -15), (38, 20)
     ]
-    for pos in monkey_positions:
+    for x, z in monkey_positions_xz:
+        pos = (x, Y_OFFSETS["monkey"], z)
         scene_objects.append((monkey_model, pos, 1.5, (0.55, 0.35, 0.2)))
 
     print(f"Escena configurada con {len(scene_objects)} objetos.")
