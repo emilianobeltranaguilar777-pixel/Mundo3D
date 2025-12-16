@@ -137,6 +137,7 @@ def setup_scene_objects():
     monkey_model = load_obj(monkey_path)
 
     # ÁRBOLES - 8 instancias distribuidas en el terreno
+    # Tree: ~1.7 unidades de alto, escala 3.0 = ~5 unidades final
     tree_positions = [
         (-15, 0.5, -10), (-20, 0.5, -5), (-25, 0.5, 5), (-18, 0.5, 15),
         (15, 0.5, -20), (20, 0.5, -15), (25, 0.5, 10), (18, 0.5, 20)
@@ -145,32 +146,36 @@ def setup_scene_objects():
         scene_objects.append((tree_model, pos, 3.0, (0.2, 0.5, 0.2)))  # Verde
 
     # CASAS - 4 instancias
+    # House: ~1.2 unidades de alto, escala 4.0 = ~5 unidades final
     house_positions = [
         (-30, 0.5, -25), (-28, 0.5, 25), (10, 0.5, -30), (12, 0.5, 28)
     ]
     for pos in house_positions:
-        scene_objects.append((house_model, pos, 2.0, (0.8, 0.6, 0.4)))  # Marrón claro
+        scene_objects.append((house_model, pos, 4.0, (0.8, 0.6, 0.4)))  # Marrón claro
 
     # COCHES - 4 instancias cerca de la carretera
+    # Car: ~89 unidades de largo! escala 0.05 = ~4.5 unidades final
     car_positions = [
         (-10, 0.3, -3), (5, 0.3, 8), (-5, 0.3, 0), (0, 0.3, 5)
     ]
     for pos in car_positions:
-        scene_objects.append((car_model, pos, 1.5, (0.8, 0.2, 0.2)))  # Rojo
+        scene_objects.append((car_model, pos, 0.05, (0.8, 0.2, 0.2)))  # Rojo
 
     # MUÑECOS DE NIEVE - 3 instancias en zona de montaña
+    # Snowman: ~0.6 unidades de alto, escala 8.0 = ~5 unidades final
     snowman_positions = [
         (25, 10, -25), (28, 8, -28), (30, 12, -30)
     ]
     for pos in snowman_positions:
-        scene_objects.append((snowman_model, pos, 2.5, (0.95, 0.95, 1.0)))  # Blanco
+        scene_objects.append((snowman_model, pos, 8.0, (0.95, 0.95, 1.0)))  # Blanco
 
     # MONOS - 3 instancias decorativas
+    # Monkey: ~2 unidades de alto, escala 1.5 = ~3 unidades final
     monkey_positions = [
         (-35, 0.5, 0), (35, 0.5, -10), (-10, 0.5, 35)
     ]
     for pos in monkey_positions:
-        scene_objects.append((monkey_model, pos, 2.0, (0.6, 0.4, 0.2)))  # Marrón
+        scene_objects.append((monkey_model, pos, 1.5, (0.6, 0.4, 0.2)))  # Marrón
 
     print(f"Escena configurada con {len(scene_objects)} objetos.")
 
