@@ -21,6 +21,160 @@ DIRT_DEPTH = 10        # Profundidad de la base de tierra
 vertex_data = []
 
 # ==========================================
+# CARGADOR DE MODELOS OBJ
+# ==========================================
+
+# Cache para modelos cargados (evita recargar el mismo archivo)
+loaded_models = {}
+
+def load_obj(filepath):
+    """
+    Carga un archivo .obj y retorna los vértices y caras.
+    Ignora materiales (.mtl) y normales para mantener simplicidad.
+    """
+    if filepath in loaded_models:
+        return loaded_models[filepath]
+
+    vertices = []
+    faces = []
+
+    try:
+        with open(filepath, 'r') as file:
+            for line in file:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+
+                parts = line.split()
+                if not parts:
+                    continue
+
+                # Vértices
+                if parts[0] == 'v':
+                    x = float(parts[1])
+                    y = float(parts[2])
+                    z = float(parts[3])
+                    vertices.append((x, y, z))
+
+                # Caras (pueden ser triángulos o quads)
+                elif parts[0] == 'f':
+                    face_vertices = []
+                    for p in parts[1:]:
+                        # Formato puede ser: v, v/vt, v/vt/vn, v//vn
+                        vertex_index = int(p.split('/')[0]) - 1  # OBJ usa índice base 1
+                        face_vertices.append(vertex_index)
+                    faces.append(face_vertices)
+    except Exception as e:
+        print(f"Error cargando {filepath}: {e}")
+        return None
+
+    model_data = {'vertices': vertices, 'faces': faces}
+    loaded_models[filepath] = model_data
+    return model_data
+
+def draw_obj_model(model_data, position=(0, 0, 0), scale=1.0, color=(0.7, 0.7, 0.7)):
+    """
+    Dibuja un modelo OBJ cargado en una posición específica.
+    """
+    if model_data is None:
+        return
+
+    vertices = model_data['vertices']
+    faces = model_data['faces']
+
+    glPushMatrix()
+    glTranslatef(position[0], position[1], position[2])
+    glScalef(scale, scale, scale)
+    glColor3f(*color)
+
+    glBegin(GL_TRIANGLES)
+    for face in faces:
+        if len(face) >= 3:
+            # Triangular el polígono (fan triangulation)
+            for i in range(1, len(face) - 1):
+                idx0 = face[0]
+                idx1 = face[i]
+                idx2 = face[i + 1]
+
+                if idx0 < len(vertices) and idx1 < len(vertices) and idx2 < len(vertices):
+                    glVertex3f(*vertices[idx0])
+                    glVertex3f(*vertices[idx1])
+                    glVertex3f(*vertices[idx2])
+    glEnd()
+
+    glPopMatrix()
+
+# ==========================================
+# CONFIGURACIÓN DE OBJETOS EN LA ESCENA
+# ==========================================
+
+# Lista de objetos a renderizar: (modelo, posición, escala, color)
+scene_objects = []
+
+def setup_scene_objects():
+    """
+    Configura los 20+ objetos que se colocarán en la escena.
+    Los modelos se reutilizan (instancias) en diferentes posiciones.
+    """
+    global scene_objects
+    scene_objects = []
+
+    # Rutas de los modelos
+    import os
+    base_path = os.path.dirname(os.path.abspath(__file__))
+
+    tree_path = os.path.join(base_path, "MODELS", "Tree", "tree.obj")
+    house_path = os.path.join(base_path, "MODELS", "Small House", "small_house.obj")
+    car_path = os.path.join(base_path, "MODELS", "Car", "1377 Car.obj")
+    snowman_path = os.path.join(base_path, "MODELS", "Snow Man", "snowman.obj")
+    monkey_path = os.path.join(base_path, "MODELS", "Monkey", "monkey.obj")
+
+    # Cargar modelos
+    tree_model = load_obj(tree_path)
+    house_model = load_obj(house_path)
+    car_model = load_obj(car_path)
+    snowman_model = load_obj(snowman_path)
+    monkey_model = load_obj(monkey_path)
+
+    # ÁRBOLES - 8 instancias distribuidas en el terreno
+    tree_positions = [
+        (-15, 0.5, -10), (-20, 0.5, -5), (-25, 0.5, 5), (-18, 0.5, 15),
+        (15, 0.5, -20), (20, 0.5, -15), (25, 0.5, 10), (18, 0.5, 20)
+    ]
+    for pos in tree_positions:
+        scene_objects.append((tree_model, pos, 3.0, (0.2, 0.5, 0.2)))  # Verde
+
+    # CASAS - 4 instancias
+    house_positions = [
+        (-30, 0.5, -25), (-28, 0.5, 25), (10, 0.5, -30), (12, 0.5, 28)
+    ]
+    for pos in house_positions:
+        scene_objects.append((house_model, pos, 2.0, (0.8, 0.6, 0.4)))  # Marrón claro
+
+    # COCHES - 4 instancias cerca de la carretera
+    car_positions = [
+        (-10, 0.3, -3), (5, 0.3, 8), (-5, 0.3, 0), (0, 0.3, 5)
+    ]
+    for pos in car_positions:
+        scene_objects.append((car_model, pos, 1.5, (0.8, 0.2, 0.2)))  # Rojo
+
+    # MUÑECOS DE NIEVE - 3 instancias en zona de montaña
+    snowman_positions = [
+        (25, 10, -25), (28, 8, -28), (30, 12, -30)
+    ]
+    for pos in snowman_positions:
+        scene_objects.append((snowman_model, pos, 2.5, (0.95, 0.95, 1.0)))  # Blanco
+
+    # MONOS - 3 instancias decorativas
+    monkey_positions = [
+        (-35, 0.5, 0), (35, 0.5, -10), (-10, 0.5, 35)
+    ]
+    for pos in monkey_positions:
+        scene_objects.append((monkey_model, pos, 2.0, (0.6, 0.4, 0.2)))  # Marrón
+
+    print(f"Escena configurada con {len(scene_objects)} objetos.")
+
+# ==========================================
 # LÓGICA MATEMÁTICA DEL TERRENO
 # ==========================================
 
@@ -253,11 +407,12 @@ def draw_road_lines():
 # ==========================================
 def draw_team_objects():
     """
-    ESPACIO RESERVADO PARA:
-    Miguel, Jesus, Jose, Axel.
-    Aquí deben instanciar sus objetos (casas, árboles, coches, etc.)
+    Dibuja todos los objetos 3D configurados en la escena.
+    Total: 22 objetos (8 árboles + 4 casas + 4 coches + 3 muñecos + 3 monos)
     """
-    pass
+    for obj in scene_objects:
+        model, position, scale, color = obj
+        draw_obj_model(model, position, scale, color)
 
 # ==========================================
 # BUCLE PRINCIPAL
@@ -278,6 +433,11 @@ def main():
     print("Generando entorno...")
     generate_terrain_geometry()
     print("Entorno listo.")
+
+    # 2. Cargar y configurar objetos 3D
+    print("Cargando modelos 3D...")
+    setup_scene_objects()
+    print("Modelos cargados.")
 
     # Variables de Cámara
     cam_x, cam_y, cam_z = 0, 40, 70 
