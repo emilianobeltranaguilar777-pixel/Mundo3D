@@ -113,7 +113,7 @@ scene_objects = []
 
 def setup_scene_objects():
     """
-    Configura los 20+ objetos que se colocarán en la escena.
+    Configura 35+ objetos distribuidos en la escena.
     Los modelos se reutilizan (instancias) en diferentes posiciones.
     """
     global scene_objects
@@ -136,46 +136,80 @@ def setup_scene_objects():
     snowman_model = load_obj(snowman_path)
     monkey_model = load_obj(monkey_path)
 
-    # ÁRBOLES - 8 instancias distribuidas en el terreno
-    # Tree: ~1.7 unidades de alto, escala 3.0 = ~5 unidades final
+    # =============================================
+    # ÁRBOLES - 16 instancias en clusters
+    # Tree: ~1.7 unidades, escala 3.0 = ~5 unidades
+    # Y offset: 1.0 para que no estén hundidos
+    # =============================================
     tree_positions = [
-        (-15, 0.5, -10), (-20, 0.5, -5), (-25, 0.5, 5), (-18, 0.5, 15),
-        (15, 0.5, -20), (20, 0.5, -15), (25, 0.5, 10), (18, 0.5, 20)
+        # Cluster izquierdo
+        (-20, 1.0, -15), (-22, 1.0, -12), (-18, 1.0, -18), (-24, 1.0, -10),
+        # Cluster derecho (alejado de montaña)
+        (15, 1.0, 20), (18, 1.0, 22), (12, 1.0, 18), (20, 1.0, 25),
+        # Dispersos por el terreno
+        (-30, 1.0, 10), (-28, 1.0, -5), (8, 1.0, -25), (-15, 1.0, 30),
+        # Cerca de casas
+        (-32, 1.0, -22), (-25, 1.0, 28), (8, 1.0, -28), (15, 1.0, 30)
     ]
     for pos in tree_positions:
-        scene_objects.append((tree_model, pos, 3.0, (0.2, 0.5, 0.2)))  # Verde
+        scene_objects.append((tree_model, pos, 3.0, (0.15, 0.45, 0.15)))
 
-    # CASAS - 4 instancias
-    # House: ~1.2 unidades de alto, escala 4.0 = ~5 unidades final
+    # =============================================
+    # CASAS - 6 instancias en las orillas
+    # House: ~1.2 unidades, escala 4.0 = ~5 unidades
+    # Y offset: 2.5 para compensar origen del modelo
+    # =============================================
     house_positions = [
-        (-30, 0.5, -25), (-28, 0.5, 25), (10, 0.5, -30), (12, 0.5, 28)
+        (-30, 2.5, -25), (-32, 2.5, 20), (-28, 2.5, 0),
+        (8, 2.5, -32), (10, 2.5, 32), (12, 2.5, -15)
     ]
     for pos in house_positions:
-        scene_objects.append((house_model, pos, 4.0, (0.8, 0.6, 0.4)))  # Marrón claro
+        scene_objects.append((house_model, pos, 4.0, (0.75, 0.55, 0.35)))
 
-    # COCHES - 4 instancias cerca de la carretera
-    # Car: ~89 unidades de largo! escala 0.05 = ~4.5 unidades final
-    car_positions = [
-        (-10, 0.3, -3), (5, 0.3, 8), (-5, 0.3, 0), (0, 0.3, 5)
+    # =============================================
+    # COCHES - 6 instancias SOBRE la carretera
+    # Car: ~89 unidades, escala 0.05 = ~4.5 unidades
+    # Usa get_road_center(x) para posicionar en Z
+    # Y offset: 0.1 justo sobre el asfalto
+    # =============================================
+    car_x_positions = [-20, -10, -2, 5, 12, 22]
+    car_colors = [
+        (0.8, 0.2, 0.2),  # Rojo
+        (0.2, 0.4, 0.8),  # Azul
+        (0.9, 0.9, 0.2),  # Amarillo
+        (0.3, 0.7, 0.3),  # Verde
+        (0.6, 0.3, 0.6),  # Morado
+        (0.9, 0.5, 0.2),  # Naranja
     ]
-    for pos in car_positions:
-        scene_objects.append((car_model, pos, 0.05, (0.8, 0.2, 0.2)))  # Rojo
+    for i, car_x in enumerate(car_x_positions):
+        road_z = get_road_center(car_x)
+        # Offset lateral para que no estén en el centro exacto
+        z_offset = 1.5 if i % 2 == 0 else -1.5
+        pos = (car_x, 0.1, road_z + z_offset)
+        scene_objects.append((car_model, pos, 0.05, car_colors[i]))
 
-    # MUÑECOS DE NIEVE - 3 instancias en zona de montaña
-    # Snowman: ~0.6 unidades de alto, escala 8.0 = ~5 unidades final
+    # =============================================
+    # MUÑECOS DE NIEVE - 5 instancias en la montaña
+    # Snowman: ~0.6 unidades, escala 8.0 = ~5 unidades
+    # Posiciones elevadas en la zona de montaña (esquina 32, -32)
+    # =============================================
     snowman_positions = [
-        (25, 10, -25), (28, 8, -28), (30, 12, -30)
+        (28, 8.0, -28), (32, 10.0, -32), (25, 6.0, -25),
+        (30, 12.0, -35), (35, 9.0, -30)
     ]
     for pos in snowman_positions:
-        scene_objects.append((snowman_model, pos, 8.0, (0.95, 0.95, 1.0)))  # Blanco
+        scene_objects.append((snowman_model, pos, 8.0, (0.95, 0.95, 1.0)))
 
-    # MONOS - 3 instancias decorativas
-    # Monkey: ~2 unidades de alto, escala 1.5 = ~3 unidades final
+    # =============================================
+    # MONOS - 4 instancias decorativas
+    # Monkey: ~2 unidades, escala 1.5 = ~3 unidades
+    # Y offset: 1.0
+    # =============================================
     monkey_positions = [
-        (-35, 0.5, 0), (35, 0.5, -10), (-10, 0.5, 35)
+        (-35, 1.0, 5), (35, 1.0, -5), (-8, 1.0, 35), (5, 1.0, -35)
     ]
     for pos in monkey_positions:
-        scene_objects.append((monkey_model, pos, 1.5, (0.6, 0.4, 0.2)))  # Marrón
+        scene_objects.append((monkey_model, pos, 1.5, (0.55, 0.35, 0.2)))
 
     print(f"Escena configurada con {len(scene_objects)} objetos.")
 
